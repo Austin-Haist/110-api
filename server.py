@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+import uuid
 
 app = Flask(__name__) # Intance of Flask
 
@@ -62,6 +63,62 @@ def get_user_information():
 
     return jsonify(user_info)
 
+# Path Parameter
+# http://127.0.0.1:5000/greet/Austin
+@app.get("/greet/<string:name>")
+def greet(name):
+    return jsonify({"message": f"Hello, {name}!"})
+
+products = [
+    {
+        "id": 1,
+        "name": "Cake",
+        "price": 25
+    },
+    {
+        "id": 2,
+        "name": "Ice-cream",
+        "price": 5
+    },
+    {
+        "id": 3,
+        "name": "Cookie",
+        "price": 3
+    },
+    {
+        "id": 4,
+        "name": "Chocolate",
+        "price": 10
+    }
+]
+
+# GET /api/products endpoint that returns a list of products.
+# http://127.0.0.1:5000/api/products
+@app.get("/api/products")
+def get_products():
+    return jsonify({"products": products})
+
+# Get/api/products/3
+# http://127.0.0.1:5000/api/products/3
+@app.get("/api/products/<int:product_id>")
+def get_product_by_id(product_id):
+    for product in products:
+        print(product)
+        if product["id"] == product_id:
+            return jsonify(product)
+        
+    return jsonify({"Product not found"}), 404 # not found
+
+# POST /api/products --> add a new product to the products list
+@app.post("/api/products")
+def create_product():
+    new_product = request.get_json()
+    print(new_product)
+    new_product["id"] = uuid.uuid4()
+    products.append(new_product)
+    return jsonify({"message": "Product added successfully"}), 201 # 201 created
+    
+
 # ---- COUPONS -----
 coupons = [
   {"_id": 1, "code": "WELCOME10", "discount": 10},
@@ -77,5 +134,44 @@ def get_coupons():
 @app.get("/api/coupons/count")
 def get_coupons_count():    
     return jsonify({"count": len(coupons)})
+
+# POST /api/coupons
+# Adds a new coupon to the coupons list
+@app.post("/api/coupons")
+def create_coupon():
+    new_coupon = request.get_json()
+
+    # Make sure the request has the required fields
+    if not new_coupon or "code" not in new_coupon or "discount" not in new_coupon:
+        return jsonify({
+            "error": "Coupon code and discount are required"
+        }), 400
+
+    # Create a new id
+    new_id = max(coupon["_id"] for coupon in coupons) + 1
+
+    coupon = {
+        "_id": new_id,
+        "code": new_coupon["code"],
+        "discount": new_coupon["discount"]
+    }
+
+    coupons.append(coupon)
+
+    return jsonify(coupon), 201
+
+
+# GET /api/coupons/<id>
+# Returns the coupon that matches the given id
+@app.get("/api/coupons/<int:coupon_id>")
+def get_coupon_by_id(coupon_id):
+
+    for coupon in coupons:
+        if coupon["_id"] == coupon_id:
+            return jsonify(coupon), 200
+
+    return jsonify({
+        "error": "Coupon not found"
+    }), 404
 
 app.run(debug=True) # Execute the instance
