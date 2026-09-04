@@ -1,3 +1,5 @@
+from itertools import product
+
 from flask import Flask, jsonify, request
 import uuid
 
@@ -119,6 +121,31 @@ def create_product():
     return jsonify({"message": "Product added successfully"}), 201 # 201 created
     
 
+# PUT http://127.0.1:5000/api/products/2 
+@app.put("/api/products/<int:product_id>")
+def update_product_by_id(product_id):
+    updated_product = request.get_json()
+    print(updated_product)
+    for product in products:
+        if product["id"] == product_id:
+            product["name"] = updated_product["name"]
+            product["price"] = updated_product["price"]
+            return jsonify({"message": f"Product with id {product_id} updated successfully"}), 200 # OK
+
+    return jsonify({"error": "Product not found"}), 404 # Not Found
+
+# DELETE http://127.0.0.1:5000/api/products/2 -> remove a product by id
+@app.delete("/api/products/<int:product_id>")
+def remove_product_by_id(product_id):
+    # logic here
+    for product in products:
+        print(product["id"])
+        if product["id"] == product_id:
+            products.remove(product)
+            return jsonify({"message": f"Product with id {product_id} removed successfully"}), 200 # OK
+
+    return jsonify({"error": "Product not found"}), 404 # Not Found
+
 # ---- COUPONS -----
 coupons = [
   {"_id": 1, "code": "WELCOME10", "discount": 10},
@@ -169,6 +196,53 @@ def get_coupon_by_id(coupon_id):
     for coupon in coupons:
         if coupon["_id"] == coupon_id:
             return jsonify(coupon), 200
+
+    return jsonify({
+        "error": "Coupon not found"
+    }), 404
+
+# PUT /api/coupons/<int:coupon_id>
+# Updates an existing coupon by id
+@app.put("/api/coupons/<int:coupon_id>")
+def update_coupon_by_id(coupon_id):
+    updated_coupon = request.get_json()
+
+    # Validate request body
+    if not updated_coupon:
+        return jsonify({
+            "error": "Coupon data is required"
+        }), 400
+
+    if "code" not in updated_coupon or "discount" not in updated_coupon:
+        return jsonify({
+            "error": "Coupon code and discount are required"
+        }), 400
+
+    # Find and update the coupon
+    for coupon in coupons:
+        if coupon["_id"] == coupon_id:
+            coupon["code"] = updated_coupon["code"]
+            coupon["discount"] = updated_coupon["discount"]
+
+            return jsonify({
+                "message": f"Coupon with id {coupon_id} updated successfully",
+                "coupon": coupon
+            }), 200
+
+    return jsonify({
+        "error": "Coupon not found"
+    }), 404
+
+# DELETE /api/coupons/<int:coupon_id> remove a coupon by id
+@app.delete("/api/coupons/<int:coupon_id>")
+def remove_coupon_by_id(coupon_id):
+    for coupon in coupons:
+        print(coupon["_id"])
+        if coupon["_id"] == coupon_id:
+            coupons.remove(coupon)
+            return jsonify({
+                "message": f"Coupon with id {coupon_id} removed successfully"
+            }), 200
 
     return jsonify({
         "error": "Coupon not found"
